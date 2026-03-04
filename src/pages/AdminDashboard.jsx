@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { Users, Package, Check, Clock, UserCheck } from 'lucide-react';
+import { Users, Package, Check, Clock, UserCheck, Eye, X } from 'lucide-react';
 
 const AdminDashboard = () => {
     // ... (Keep existing logic)
@@ -12,6 +12,7 @@ const AdminDashboard = () => {
     const [pendingUsers, setPendingUsers] = useState([]);
     const [allOrders, setAllOrders] = useState([]);
     const [activeTab, setActiveTab] = useState('users');
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -169,6 +170,7 @@ const AdminDashboard = () => {
                                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Items</th>
                                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
                                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Products</th>
                                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
@@ -193,6 +195,14 @@ const AdminDashboard = () => {
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
+                                                        <button
+                                                            onClick={() => setSelectedOrder(order)}
+                                                            className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded hover:bg-blue-100 transition-colors flex items-center gap-1 border border-blue-200"
+                                                        >
+                                                            <Eye size={12} /> View
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
                                                         {order.status !== 'approved' && (
                                                             <button
                                                                 onClick={() => updateOrderStatus(order._id, 'approved')}
@@ -206,7 +216,7 @@ const AdminDashboard = () => {
                                             ))}
                                             {allOrders.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500 italic">
+                                                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500 italic">
                                                         No orders found.
                                                     </td>
                                                 </tr>
@@ -219,6 +229,63 @@ const AdminDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Order Products Modal */}
+            {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        {/* Modal Header */}
+                        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-heading font-bold text-lg">Order Details</h3>
+                                <p className="text-slate-400 text-xs font-mono">#{selectedOrder._id}</p>
+                            </div>
+                            <button onClick={() => setSelectedOrder(null)} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Customer & Date Info */}
+                        <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Customer: <span className="font-semibold text-slate-800">{selectedOrder.userId?.username || 'Unknown'}</span></span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedOrder.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                }`}>{selectedOrder.status.toUpperCase()}</span>
+                        </div>
+
+                        {/* Products List */}
+                        <div className="px-6 py-4 max-h-80 overflow-y-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="text-xs font-bold text-slate-400 uppercase border-b border-slate-100">
+                                        <th className="text-left pb-2">Product</th>
+                                        <th className="text-center pb-2">Qty</th>
+                                        <th className="text-right pb-2">Unit Price</th>
+                                        <th className="text-right pb-2">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {selectedOrder.products.map((p, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50">
+                                            <td className="py-2.5 font-medium text-slate-800">{p.name}</td>
+                                            <td className="py-2.5 text-center text-slate-500">{p.quantity}</td>
+                                            <td className="py-2.5 text-right text-slate-500">₹{p.price}</td>
+                                            <td className="py-2.5 text-right font-semibold text-slate-900">₹{(p.price * p.quantity).toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Total Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-slate-500 text-sm">{selectedOrder.products.length} product(s)</span>
+                            <span className="text-lg font-heading font-bold text-slate-900">
+                                Total: ₹{selectedOrder.totalAmount.toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 };
