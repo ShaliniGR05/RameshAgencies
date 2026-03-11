@@ -58,7 +58,7 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ message: 'Account not approved yet' });
         }
 
-        const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user._id, role: user.role, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
         res.json({ token, role: user.role, username: user.username });
     } catch (error) {
         res.status(500).json({ message: 'Error logging in', error });

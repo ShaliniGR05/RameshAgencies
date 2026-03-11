@@ -18,7 +18,9 @@ export const AuthProvider = ({ children }) => {
                 if (decoded.exp * 1000 < Date.now()) {
                     logout();
                 } else {
-                    setUser(decoded);
+                    // Merge stored username in case old token doesn't have it
+                    const storedUsername = localStorage.getItem('username');
+                    setUser({ ...decoded, username: decoded.username || storedUsername });
                 }
             } catch (error) {
                 logout();
@@ -27,14 +29,16 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const login = (token) => {
+    const login = (token, username) => {
         localStorage.setItem('token', token);
+        if (username) localStorage.setItem('username', username);
         const decoded = jwtDecode(token);
-        setUser(decoded);
+        setUser({ ...decoded, username: decoded.username || username });
     };
 
     const logout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('username');
         setUser(null);
     };
 

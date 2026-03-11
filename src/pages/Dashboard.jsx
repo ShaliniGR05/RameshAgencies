@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { products, categories } from '../data/products';
+import { products as staticProducts, categories } from '../data/products';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ const Dashboard = () => {
     const [orders, setOrders] = useState([]);
     const [activeTab, setActiveTab] = useState('products');
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [dbProducts, setDbProducts] = useState([]);
 
     // ... (Keep existing logic handlers)
     const addToCart = (product) => {
@@ -79,12 +80,30 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchOrders();
+        // Fetch DB products (public endpoint)
+        axios.get('http://localhost:5000/api/products')
+            .then(res => setDbProducts(res.data))
+            .catch(() => { });
     }, []);
+
+    // Merge DB products first, then static products
+    const allProducts = [
+        ...dbProducts.map(p => ({
+            id: `db-${p._id}`,
+            name: p.product_name,
+            description: p.description || '',
+            price: p.price,
+            image: p.image_url || '',
+            category: p.category,
+            isNew: true
+        })),
+        ...staticProducts
+    ];
 
     // Tabs Config
     const tabs = [
         { id: 'products', label: 'Shop Products', icon: ShoppingBag },
-        { id: 'cart', label: `Cart (${cart.reduce((a, b) => a + b.quantity, 0)})`, icon: ShoppingBag }, // Using same icon for simplicity or change if needed
+        { id: 'cart', label: `Cart (${cart.reduce((a, b) => a + b.quantity, 0)})`, icon: ShoppingBag },
         { id: 'orders', label: 'Order History', icon: Package },
     ];
 
@@ -95,12 +114,9 @@ const Dashboard = () => {
                     {/* Sidebar */}
                     <div className="w-full md:w-64 flex-shrink-0">
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-24">
-                            <div className="mb-8 text-center md:text-left">
-                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-2xl font-bold font-heading text-slate-900 mb-3 mx-auto md:mx-0">
-                                    {user?.username?.charAt(0).toUpperCase()}
-                                </div>
-                                <h2 className="font-heading font-bold text-lg text-slate-900">{user?.username}</h2>
-                                <p className="text-sm text-slate-500">Verified Customer</p>
+                            <div className="mb-4 pb-4 border-b border-slate-100">
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Logged in as</p>
+                                <h2 className="font-heading font-bold text-base text-slate-900 truncate">{user?.username || 'Customer'}</h2>
                             </div>
 
                             <nav className="space-y-2">
@@ -134,8 +150,8 @@ const Dashboard = () => {
                                     <button
                                         onClick={() => setSelectedCategory('all')}
                                         className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${selectedCategory === 'all'
-                                                ? 'bg-slate-900 text-white border-slate-900'
-                                                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-900'
+                                            ? 'bg-slate-900 text-white border-slate-900'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-900'
                                             }`}
                                     >
                                         All
@@ -145,8 +161,8 @@ const Dashboard = () => {
                                             key={cat.id}
                                             onClick={() => setSelectedCategory(cat.id)}
                                             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${selectedCategory === cat.id
-                                                    ? 'bg-slate-900 text-white border-slate-900'
-                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-900'
+                                                ? 'bg-slate-900 text-white border-slate-900'
+                                                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-900'
                                                 }`}
                                         >
                                             {cat.name}
@@ -155,7 +171,7 @@ const Dashboard = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {(selectedCategory === 'all' ? products : products.filter(p => p.category === selectedCategory)).map(product => (
+                                    {(selectedCategory === 'all' ? allProducts : allProducts.filter(p => p.category === selectedCategory)).map(product => (
                                         <div key={product.id} className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
                                             <div className="h-48 overflow-hidden relative">
                                                 <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />

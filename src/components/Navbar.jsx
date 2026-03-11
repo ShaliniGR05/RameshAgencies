@@ -32,7 +32,10 @@ const Navbar = () => {
                         <div className="flex items-center gap-4">
                             <span className="text-sm font-medium text-slate-500 hidden md:block">Welcome, {user.username}</span>
                             {user.role === 'admin' ? (
-                                <Link to="/admin" className="btn-secondary text-sm">Dashboard</Link>
+                                <div className="flex items-center gap-3">
+                                    <Link to="/" className="text-slate-600 font-medium hover:text-slate-900 transition-colors text-sm">Home</Link>
+                                    <Link to="/admin" className="btn-secondary text-sm">Dashboard</Link>
+                                </div>
                             ) : (
                                 <Link to="/dashboard" className="btn-secondary text-sm flex items-center gap-2">
                                     <ShoppingBag size={18} />

@@ -1,16 +1,53 @@
-import React, { useState } from 'react';
-import { products, categories } from '../data/products';
+import React, { useState, useEffect } from 'react';
+import { products as staticProducts, categories } from '../data/products';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { ArrowRight } from 'lucide-react';
 
+// Converts a Google Drive share URL to a browser-renderable thumbnail URL.
+const convertDriveUrl = (url) => {
+    if (!url) return url;
+    // Match: https://drive.google.com/file/d/<ID>/view...
+    const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/\?&]+)/);
+    if (fileMatch) return `https://drive.google.com/thumbnail?id=${fileMatch[1]}&sz=w400`;
+    // Match: /open?id=<ID>
+    const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+    if (openMatch) return `https://drive.google.com/thumbnail?id=${openMatch[1]}&sz=w400`;
+    // Also convert legacy saved uc?id= format
+    const legacyUcMatch = url.match(/drive\.google\.com\/uc\?.*id=([^&]+)/);
+    if (legacyUcMatch) return `https://drive.google.com/thumbnail?id=${legacyUcMatch[1]}&sz=w400`;
+    return url;
+};
+
 const Home = () => {
     const [activeCategory, setActiveCategory] = useState('all');
+    const [dbProducts, setDbProducts] = useState([]);
+
+    useEffect(() => {
+        axios.get('http://localhost:5000/api/products')
+            .then(res => setDbProducts(res.data))
+            .catch(() => { });
+    }, []);
+
+    // Merge DB products (first) with static products
+    const allProducts = [
+        ...dbProducts.map(p => ({
+            id: `db-${p._id}`,
+            name: p.product_name,
+            description: p.description || '',
+            price: p.price,
+            image: convertDriveUrl(p.image_url || ''),
+            category: p.category,
+            isNew: true
+        })),
+        ...staticProducts
+    ];
 
     const filteredProducts =
         activeCategory === 'all'
-            ? products
-            : products.filter(p => p.category === activeCategory);
+            ? allProducts
+            : allProducts.filter(p => p.category === activeCategory);
 
     return (
         <Layout>
@@ -44,8 +81,8 @@ const Home = () => {
                         <button
                             onClick={() => setActiveCategory('all')}
                             className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors border ${activeCategory === 'all'
-                                    ? 'bg-slate-900 text-white border-slate-900'
-                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-900'
+                                ? 'bg-slate-900 text-white border-slate-900'
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-900'
                                 }`}
                         >
                             All Products
@@ -55,8 +92,8 @@ const Home = () => {
                                 key={cat.id}
                                 onClick={() => setActiveCategory(cat.id)}
                                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors border ${activeCategory === cat.id
-                                        ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-white text-slate-700 border-slate-200 hover:border-slate-900'
+                                    ? 'bg-slate-900 text-white border-slate-900'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-900'
                                     }`}
                             >
                                 {cat.name}
@@ -79,6 +116,10 @@ const Home = () => {
                                     <span className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                                         {categories.find(c => c.id === product.category)?.name}
                                     </span>
+                                    {/* NEW badge for DB products */}
+                                    {product.isNew && (
+                                        <span className="absolute top-3 right-3 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-full">NEW</span>
+                                    )}
                                 </div>
                                 <div className="p-6">
                                     <h3 className="text-xl font-bold mb-2 font-heading text-slate-900">{product.name}</h3>

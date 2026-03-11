@@ -15,7 +15,7 @@ const Login = () => {
         e.preventDefault();
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', { username, password });
-            login(res.data.token);
+            login(res.data.token, res.data.username);
             if (res.data.role === 'admin') {
                 navigate('/admin');
             } else {
