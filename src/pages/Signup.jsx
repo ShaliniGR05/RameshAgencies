@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../api';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 
@@ -13,7 +14,7 @@ const Signup = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/auth/signup', { username, password });
+            await axios.post(`${API_BASE_URL}/api/auth/signup`, { username, password });
             setMessage('Registration successful! Please wait for admin approval.');
             setError('');
             setTimeout(() => navigate('/login'), 3000);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -14,7 +15,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', { username, password });
+            const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
             login(res.data.token, res.data.username);
             if (res.data.role === 'admin') {
                 navigate('/admin');

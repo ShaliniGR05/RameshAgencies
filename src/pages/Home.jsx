@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { products as staticProducts, categories } from '../data/products';
 import axios from 'axios';
+import API_BASE_URL from '../api';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { ArrowRight } from 'lucide-react';
@@ -25,7 +26,7 @@ const Home = () => {
     const [dbProducts, setDbProducts] = useState([]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/products')
+        axios.get(`${API_BASE_URL}/api/products`)
             .then(res => setDbProducts(res.data))
             .catch(() => { });
     }, []);

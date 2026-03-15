@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -46,7 +47,7 @@ const AdminDashboard = () => {
 
     const fetchPendingUsers = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/auth/all-users', config);
+            const res = await axios.get(`${API_BASE_URL}/api/auth/all-users`, config);
             setPendingUsers(res.data);
         } catch (error) {
             console.error('Error fetching users', error);
@@ -55,7 +56,7 @@ const AdminDashboard = () => {
 
     const fetchAllOrders = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/orders', config);
+            const res = await axios.get(`${API_BASE_URL}/api/orders`, config);
             setAllOrders(res.data);
         } catch (error) {
             console.error('Error fetching orders', error);
@@ -64,7 +65,7 @@ const AdminDashboard = () => {
 
     const fetchProducts = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/products', config);
+            const res = await axios.get(`${API_BASE_URL}/api/products`, config);
             setAllProducts(res.data);
         } catch (error) {
             console.error('Error fetching products', error);
@@ -74,7 +75,7 @@ const AdminDashboard = () => {
     const addProduct = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/products', {
+            await axios.post(`${API_BASE_URL}/api/products`, {
                 ...newProduct,
                 price: parseFloat(newProduct.price)
             }, config);
@@ -90,7 +91,7 @@ const AdminDashboard = () => {
     const deleteProduct = async (id) => {
         if (!window.confirm('Delete this product?')) return;
         try {
-            await axios.delete(`http://localhost:5000/api/products/${id}`, config);
+            await axios.delete(`${API_BASE_URL}/api/products/${id}`, config);
             fetchProducts();
         } catch (error) {
             console.error('Error deleting product', error);
@@ -113,7 +114,7 @@ const AdminDashboard = () => {
         e.preventDefault();
         try {
             await axios.put(
-                `http://localhost:5000/api/products/${editingProduct._id}`,
+                `${API_BASE_URL}/api/products/${editingProduct._id}`,
                 { ...editingProduct, price: parseFloat(editingProduct.price) },
                 config
             );
@@ -127,7 +128,7 @@ const AdminDashboard = () => {
 
     const approveUser = async (id) => {
         try {
-            await axios.put(`http://localhost:5000/api/auth/approve-user/${id}`, {}, config);
+            await axios.put(`${API_BASE_URL}/api/auth/approve-user/${id}`, {}, config);
             fetchPendingUsers();
         } catch (error) {
             console.error('Error approving user', error);
@@ -136,7 +137,7 @@ const AdminDashboard = () => {
 
     const updateOrderStatus = async (id, status) => {
         try {
-            await axios.put(`http://localhost:5000/api/orders/${id}/status`, { status }, config);
+            await axios.put(`${API_BASE_URL}/api/orders/${id}/status`, { status }, config);
             fetchAllOrders();
         } catch (error) {
             console.error('Error updating order status', error);

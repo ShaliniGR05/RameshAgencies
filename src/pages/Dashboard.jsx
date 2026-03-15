@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { products as staticProducts, categories } from '../data/products';
 import axios from 'axios';
+import API_BASE_URL from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -51,7 +52,7 @@ const Dashboard = () => {
             }));
 
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/orders',
+            await axios.post(`${API_BASE_URL}/api/orders`,
                 { products: orderProducts, totalAmount },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -69,7 +70,7 @@ const Dashboard = () => {
     const fetchOrders = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/orders', {
+            const res = await axios.get(`${API_BASE_URL}/api/orders`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setOrders(res.data);
@@ -81,7 +82,7 @@ const Dashboard = () => {
     useEffect(() => {
         fetchOrders();
         // Fetch DB products (public endpoint)
-        axios.get('http://localhost:5000/api/products')
+        axios.get(`${API_BASE_URL}/api/products`)
             .then(res => setDbProducts(res.data))
             .catch(() => { });
     }, []);
