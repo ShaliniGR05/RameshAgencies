@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { products as staticProducts, categories } from '../data/products';
 import axios from 'axios';
 import API_BASE_URL from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { ShoppingBag, Package, Clock, LogOut, Trash2, CreditCard, Plus, Minus } from 'lucide-react';
+import { ShoppingBag, Package, Clock, LogOut, Trash2, CreditCard, Plus, Minus, CheckCircle, XCircle } from 'lucide-react';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -15,6 +15,12 @@ const Dashboard = () => {
     const [activeTab, setActiveTab] = useState('products');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [dbProducts, setDbProducts] = useState([]);
+    const [toast, setToast] = useState(null);
+
+    const showToast = useCallback((message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3500);
+    }, []);
 
     // ... (Keep existing logic handlers)
     const addToCart = (product) => {
@@ -57,13 +63,13 @@ const Dashboard = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            alert('Order placed successfully!');
+            showToast('Order placed successfully! 🎉', 'success');
             setCart([]);
             fetchOrders();
             setActiveTab('orders');
         } catch (error) {
             console.error(error);
-            alert('Failed to place order');
+            showToast('Failed to place order. Please try again.', 'error');
         }
     };
 
@@ -110,6 +116,46 @@ const Dashboard = () => {
 
     return (
         <Layout>
+            {/* Toast Notification */}
+            {toast && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: '24px',
+                        right: '24px',
+                        zIndex: 9999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '14px 20px',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                        background: toast.type === 'success' ? '#1a1a2e' : '#2d1a1a',
+                        color: '#fff',
+                        minWidth: '280px',
+                        maxWidth: '380px',
+                        animation: 'slideInRight 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                        borderLeft: toast.type === 'success' ? '4px solid #22c55e' : '4px solid #ef4444',
+                    }}
+                >
+                    {toast.type === 'success'
+                        ? <CheckCircle size={20} style={{ color: '#22c55e', flexShrink: 0 }} />
+                        : <XCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+                    }
+                    <span style={{ fontSize: '14px', fontWeight: 500, lineHeight: 1.4 }}>{toast.message}</span>
+                    <button
+                        onClick={() => setToast(null)}
+                        style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#aaa', cursor: 'pointer', fontSize: '18px', lineHeight: 1, padding: '0 0 0 8px' }}
+                        aria-label="Close"
+                    >×</button>
+                </div>
+            )}
+            <style>{`
+                @keyframes slideInRight {
+                    from { opacity: 0; transform: translateX(60px) scale(0.95); }
+                    to   { opacity: 1; transform: translateX(0)   scale(1); }
+                }
+            `}</style>
             <div className="container mx-auto px-6 py-10">
                 <div className="flex flex-col md:flex-row gap-8">
                     {/* Sidebar */}
