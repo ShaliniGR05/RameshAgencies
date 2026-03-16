@@ -4,7 +4,7 @@ import axios from 'axios';
 import API_BASE_URL from '../api';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Phone, MapPin } from 'lucide-react';
 
 // Converts a Google Drive share URL to a browser-renderable thumbnail URL.
 const convertDriveUrl = (url) => {
@@ -66,6 +66,65 @@ const Home = () => {
                     <Link to="/signup" className="bg-white text-slate-900 px-8 py-3 rounded-full font-bold text-lg hover:bg-blue-50 transition-colors flex items-center gap-2 group">
                         Shop Collection <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                     </Link>
+                </div>
+            </section>
+
+            {/* About Us Section */}
+            <section className="py-24 bg-white">
+                <div className="container mx-auto px-6">
+                    <div className="flex flex-col lg:flex-row items-center gap-16">
+                        {/* Text Content (Left) */}
+                        <div className="lg:w-1/2 flex flex-col items-start text-left">
+                            <h2 className="text-3xl md:text-5xl font-bold font-heading mb-6 text-slate-900 leading-tight">
+                                Tradition of Quality & <br className="hidden md:block" />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">Divine Fragrance</span>
+                            </h2>
+                            <div className="w-24 h-1.5 bg-gradient-to-r from-orange-400 to-yellow-400 mb-8 rounded-full"></div>
+                            <p className="text-lg text-slate-600 mb-8 font-light leading-relaxed">
+                                Ramesh Agencies has been a trusted supplier of premium incense sticks and pooja items, bringing divine fragrance and peace to countless homes. We carefully source the finest natural ingredients to craft products that elevate your spiritual experience.
+                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row gap-4 w-full mb-4">
+                                <a href="tel:9842651896" className="flex-1 flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:border-orange-200 hover:shadow-md transition-all group">
+                                    <div className="w-12 h-12 bg-white shadow-sm rounded-full flex items-center justify-center text-orange-600 shrink-0 group-hover:scale-110 transition-transform border border-slate-100">
+                                        <Phone size={22} className="fill-orange-50 stroke-orange-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Call Us</p>
+                                        <p className="text-lg font-bold text-slate-900 group-hover:text-orange-600 transition-colors">9842651896</p>
+                                    </div>
+                                </a>
+                                
+                                <a href="https://share.google/53UX6mMNjik7aCjEV" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:border-orange-200 hover:shadow-md transition-all group">
+                                    <div className="w-12 h-12 bg-white shadow-sm rounded-full flex items-center justify-center text-orange-600 shrink-0 group-hover:scale-110 transition-transform border border-slate-100">
+                                        <MapPin size={22} className="fill-orange-50 stroke-orange-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Visit Us</p>
+                                        <p className="text-base font-bold text-slate-900 group-hover:text-orange-600 transition-colors underline decoration-slate-300 underline-offset-4 group-hover:decoration-orange-300">
+                                            Google Maps
+                                        </p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Image (Right) */}
+                        <div className="lg:w-1/2 relative group w-full">
+                            <div className="absolute -inset-4 bg-gradient-to-tr from-orange-200 to-yellow-100 rounded-[2.5rem] blur-2xl opacity-50 group-hover:opacity-75 transition duration-700"></div>
+                            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white aspect-[4/3] md:aspect-video lg:aspect-[4/3]">
+                                <img src="/assets/about.png" alt="About Ramesh Agencies" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                <div className="absolute bottom-0 left-0 right-0 p-8 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                                    <p className="text-3xl font-bold font-heading mb-2 text-white shadow-sm">Premium Quality</p>
+                                    <p className="text-white/90 font-medium text-lg drop-shadow-md flex items-center gap-2">
+                                        <span className="w-8 h-[2px] bg-orange-400"></span>
+                                        Serving with devotion
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
