@@ -54,7 +54,7 @@ const Home = () => {
         <Layout>
             {/* Hero Section */}
             <section className="relative bg-slate-900 text-white py-24 overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1519638831568-d9897f54ed69?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center opacity-20"></div>
+                <div className="absolute inset-0 bg-[url('/tanjore_temple.png')] bg-cover bg-center opacity-20"></div>
                 <div className="container mx-auto px-6 relative z-10 flex flex-col items-center text-center">
                     <h1 className="text-5xl md:text-7xl font-heading font-extrabold mb-6 leading-tight">
                         Experience Pure <br />
