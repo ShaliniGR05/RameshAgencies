@@ -43,7 +43,7 @@ const Signup = () => {
         <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-white">
             {/* Left Side - Image */}
             <div className="hidden md:block relative bg-slate-900">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80')] bg-cover bg-center opacity-40"></div>
+                <div className="absolute inset-0 bg-[url('/assets/sambrani.webp')] bg-cover bg-center opacity-40"></div>
                 <div className="relative z-10 h-full flex flex-col justify-between p-12 text-white">
                     <Link to="/" className="flex items-center gap-2 text-white/80 hover:text-white transition-colors">
                         <ArrowLeft size={20} /> Back to Home
