@@ -5,7 +5,7 @@ import { verifyToken } from './auth.js';
 
 const router = express.Router();
 
-// Create Order (Customer only, technically admin can too but usually for customers)
+// Create Order (Customer)
 router.post('/', verifyToken, async (req, res) => {
     try {
         const { products, totalAmount } = req.body;
@@ -17,7 +17,6 @@ router.post('/', verifyToken, async (req, res) => {
         await order.save();
 
         // Send WhatsApp notification to admin (non-blocking)
-        // Dynamic import ensures dotenv has already loaded env vars before Twilio client is created
         User.findById(req.userId)
             .then(async (user) => {
                 const username = user ? user.username : 'Unknown Customer';
@@ -34,7 +33,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 });
 
-// Update Order Status (Admin)
+// Update Order Status (Admin only — approve / reject)
 router.put('/:id/status', verifyToken, async (req, res) => {
     try {
         if (req.userRole !== 'admin') {
@@ -45,6 +44,85 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         res.json({ message: 'Order status updated', order });
     } catch (error) {
         res.status(500).json({ message: 'Error updating order', error });
+    }
+});
+
+// Edit Order (User — only pending orders)
+router.put('/:id', verifyToken, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        // Only the owner can edit
+        if (order.userId.toString() !== req.userId) {
+            return res.status(403).json({ message: 'Not authorized to edit this order' });
+        }
+
+        // Can only edit pending orders
+        if (order.status !== 'pending') {
+            return res.status(400).json({ message: 'Only pending orders can be edited' });
+        }
+
+        const { products, totalAmount } = req.body;
+        order.products = products;
+        order.totalAmount = totalAmount;
+        await order.save();
+
+        // Notify admin via WhatsApp (non-blocking)
+        User.findById(req.userId)
+            .then(async (user) => {
+                const username = user ? user.username : 'Unknown Customer';
+                const { sendOrderEditNotification } = await import('../utils/whatsapp.js');
+                return sendOrderEditNotification(order, username);
+            })
+            .catch(err => {
+                console.error('WhatsApp edit notification failed:', err.message);
+            });
+
+        res.json({ message: 'Order updated successfully', order });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating order', error });
+    }
+});
+
+// Delete Order (User — only pending orders)
+router.delete('/:id', verifyToken, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        // Only the owner can delete
+        if (order.userId.toString() !== req.userId) {
+            return res.status(403).json({ message: 'Not authorized to delete this order' });
+        }
+
+        // Can only delete pending orders
+        if (order.status !== 'pending') {
+            return res.status(400).json({ message: 'Only pending orders can be deleted' });
+        }
+
+        const orderId = order._id.toString();
+        const deletedProducts = order.products; // capture for notification
+        const deletedTotal = order.totalAmount;
+
+        // Soft-delete: mark as 'deleted' so admin can still see it
+        order.status = 'deleted';
+        await order.save();
+
+        // Notify admin via WhatsApp (non-blocking)
+        User.findById(req.userId)
+            .then(async (user) => {
+                const username = user ? user.username : 'Unknown Customer';
+                const { sendOrderDeleteNotification } = await import('../utils/whatsapp.js');
+                return sendOrderDeleteNotification(orderId, username, deletedProducts, deletedTotal);
+            })
+            .catch(err => {
+                console.error('WhatsApp delete notification failed:', err.message);
+            });
+
+        res.json({ message: 'Order deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting order', error });
     }
 });
 

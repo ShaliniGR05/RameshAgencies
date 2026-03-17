@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { categories } from '../data/products';
-import { Users, Package, Check, Clock, UserCheck, Eye, X, ShoppingBag, Plus, Trash2, Filter, Pencil } from 'lucide-react';
+import { Users, Package, Check, Clock, UserCheck, Eye, X, ShoppingBag, Plus, Trash2, Filter, Pencil, XCircle } from 'lucide-react';
 
 const convertDriveUrl = (url) => {
     if (!url) return url;
@@ -162,35 +162,37 @@ const AdminDashboard = () => {
 
     return (
         <Layout>
-            <div className="bg-slate-900 text-white py-12">
-                <div className="container mx-auto px-6">
-                    <h1 className="text-3xl font-heading font-bold mb-2">Admin Dashboard</h1>
-                    <p className="text-slate-400">Manage user access and oversee order fulfillment.</p>
+            <div className="bg-slate-900 text-white py-8 sm:py-12">
+                <div className="container mx-auto px-4 sm:px-6">
+                    <h1 className="text-2xl sm:text-3xl font-heading font-bold mb-1 sm:mb-2">Admin Dashboard</h1>
+                    <p className="text-slate-400 text-sm sm:text-base">Manage user access and oversee order fulfillment.</p>
                 </div>
             </div>
 
-            <div className="container mx-auto px-6 -mt-8">
+            <div className="container mx-auto px-3 sm:px-6 -mt-6 sm:-mt-8">
                 <div className="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden min-h-[600px]">
-                    <div className="flex border-b border-slate-100">
+                    {/* Tab Bar — scrolls horizontally on mobile */}
+                    <div className="flex border-b border-slate-100 overflow-x-auto scrollbar-hide">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-3 px-8 py-5 text-sm font-semibold transition-colors border-b-2 ${activeTab === tab.id
+                                className={`flex items-center gap-1 sm:gap-3 px-4 sm:px-8 py-4 sm:py-5 text-xs sm:text-sm font-semibold transition-colors border-b-2 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
                                     ? 'border-slate-900 text-slate-900 bg-slate-50/50'
                                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                     }`}
                             >
-                                <tab.icon size={18} />
-                                {tab.label}
-                                <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                                <tab.icon size={16} />
+                                <span className="hidden sm:inline">{tab.label}</span>
+                                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                                <span className={`px-1.5 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'}`}>
                                     {tab.count}
                                 </span>
                             </button>
                         ))}
                     </div>
 
-                    <div className="p-8">
+                    <div className="p-4 sm:p-8">
                         {activeTab === 'users' && (
                             <div>
                                 <h2 className="text-xl font-bold font-heading mb-6 flex items-center gap-2">
@@ -284,8 +286,10 @@ const AdminDashboard = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">₹{order.totalAmount.toLocaleString()}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${order.status === 'approved'
-                                                            ? 'bg-green-100 text-green-700'
+                                                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                                                            order.status === 'approved' ? 'bg-green-100 text-green-700'
+                                                            : order.status === 'rejected' ? 'bg-red-100 text-red-700'
+                                                            : order.status === 'deleted'  ? 'bg-slate-200 text-slate-500'
                                                             : 'bg-orange-100 text-orange-700'
                                                             }`}>
                                                             {order.status.toUpperCase()}
@@ -300,13 +304,27 @@ const AdminDashboard = () => {
                                                         </button>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        {order.status !== 'approved' && (
-                                                            <button
-                                                                onClick={() => updateOrderStatus(order._id, 'approved')}
-                                                                className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 transition-colors flex items-center gap-1"
-                                                            >
-                                                                <Check size={12} /> Approve Order
-                                                            </button>
+                                                        {order.status === 'deleted' ? (
+                                                            <span className="text-xs text-slate-400 italic">— no actions —</span>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2">
+                                                                {order.status !== 'approved' && (
+                                                                    <button
+                                                                        onClick={() => updateOrderStatus(order._id, 'approved')}
+                                                                        className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 transition-colors flex items-center gap-1"
+                                                                    >
+                                                                        <Check size={12} /> Approve
+                                                                    </button>
+                                                                )}
+                                                                {order.status !== 'rejected' && (
+                                                                    <button
+                                                                        onClick={() => updateOrderStatus(order._id, 'rejected')}
+                                                                        className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition-colors flex items-center gap-1"
+                                                                    >
+                                                                        <XCircle size={12} /> Reject
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -622,8 +640,11 @@ const AdminDashboard = () => {
                         {/* Customer & Date Info */}
                         <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-sm">
                             <span className="text-slate-500">Customer: <span className="font-semibold text-slate-800">{selectedOrder.userId?.username || 'Unknown'}</span></span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedOrder.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                }`}>{selectedOrder.status.toUpperCase()}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                selectedOrder.status === 'approved' ? 'bg-green-100 text-green-700'
+                                : selectedOrder.status === 'rejected' ? 'bg-red-100 text-red-700'
+                                : 'bg-orange-100 text-orange-700'
+                            }`}>{selectedOrder.status.toUpperCase()}</span>
                         </div>
 
                         {/* Products List */}

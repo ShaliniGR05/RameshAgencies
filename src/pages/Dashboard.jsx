@@ -5,7 +5,7 @@ import API_BASE_URL from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { ShoppingBag, Package, Clock, LogOut, Trash2, CreditCard, Plus, Minus, CheckCircle, XCircle } from 'lucide-react';
+import { ShoppingBag, Package, Clock, LogOut, Trash2, CreditCard, Plus, Minus, CheckCircle, XCircle, Pencil } from 'lucide-react';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -16,6 +16,8 @@ const Dashboard = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [dbProducts, setDbProducts] = useState([]);
     const [toast, setToast] = useState(null);
+    const [editingOrder, setEditingOrder] = useState(null); // order being edited
+    const [productSearch, setProductSearch] = useState(''); // search inside edit modal
 
     const showToast = useCallback((message, type = 'success') => {
         setToast({ message, type });
@@ -85,6 +87,89 @@ const Dashboard = () => {
         }
     };
 
+    const deleteOrder = async (orderId) => {
+        if (!window.confirm('Are you sure you want to delete this order?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_BASE_URL}/api/orders/${orderId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            showToast('Order deleted successfully.', 'success');
+            fetchOrders();
+        } catch (error) {
+            const msg = error.response?.data?.message || 'Failed to delete order.';
+            showToast(msg, 'error');
+        }
+    };
+
+    const openEditOrder = (order) => {
+        // Deep-clone products so edits don't mutate state directly
+        setEditingOrder({
+            _id: order._id,
+            products: order.products.map(p => ({ ...p })),
+        });
+    };
+
+    const updateEditQty = (idx, change) => {
+        setEditingOrder(prev => {
+            const products = prev.products.map((p, i) => {
+                if (i !== idx) return p;
+                const newQty = p.quantity + change;
+                return newQty > 0 ? { ...p, quantity: newQty } : p;
+            });
+            return { ...prev, products };
+        });
+    };
+
+    const removeEditProduct = (idx) => {
+        setEditingOrder(prev => ({
+            ...prev,
+            products: prev.products.filter((_, i) => i !== idx),
+        }));
+    };
+
+    // Add a product from catalog to the edit order (or bump qty if already present)
+    const addProductToEditOrder = (product) => {
+        setEditingOrder(prev => {
+            const existing = prev.products.find(p => p.productId === product.id);
+            if (existing) {
+                return {
+                    ...prev,
+                    products: prev.products.map(p =>
+                        p.productId === product.id ? { ...p, quantity: p.quantity + 1 } : p
+                    ),
+                };
+            }
+            return {
+                ...prev,
+                products: [...prev.products, {
+                    productId: product.id,
+                    name: product.name,
+                    quantity: 1,
+                    price: product.price,
+                }],
+            };
+        });
+    };
+
+    const saveEditOrder = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const totalAmount = editingOrder.products.reduce((s, p) => s + p.price * p.quantity, 0);
+            await axios.put(
+                `${API_BASE_URL}/api/orders/${editingOrder._id}`,
+                { products: editingOrder.products, totalAmount },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            showToast('Order updated successfully! ✏️', 'success');
+            setEditingOrder(null);
+            fetchOrders();
+        } catch (error) {
+            const msg = error.response?.data?.message || 'Failed to update order.';
+            showToast(msg, 'error');
+        }
+    };
+
     useEffect(() => {
         fetchOrders();
         // Fetch DB products (public endpoint)
@@ -121,19 +206,21 @@ const Dashboard = () => {
                 <div
                     style={{
                         position: 'fixed',
-                        top: '24px',
-                        right: '24px',
+                        top: '16px',
+                        right: '16px',
+                        left: window.innerWidth < 640 ? '16px' : 'auto',
                         zIndex: 9999,
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px',
-                        padding: '14px 20px',
+                        padding: '12px 16px',
                         borderRadius: '12px',
                         boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
                         background: toast.type === 'success' ? '#1a1a2e' : '#2d1a1a',
                         color: '#fff',
-                        minWidth: '280px',
-                        maxWidth: '380px',
+                        minWidth: '0',
+                        maxWidth: '420px',
+                        width: window.innerWidth < 640 ? 'calc(100% - 32px)' : 'auto',
                         animation: 'slideInRight 0.35s cubic-bezier(0.34,1.56,0.64,1)',
                         borderLeft: toast.type === 'success' ? '4px solid #22c55e' : '4px solid #ef4444',
                     }}
@@ -156,7 +243,7 @@ const Dashboard = () => {
                     to   { opacity: 1; transform: translateX(0)   scale(1); }
                 }
             `}</style>
-            <div className="container mx-auto px-6 py-10">
+            <div className="container mx-auto px-3 sm:px-6 py-6 sm:py-10">
                 <div className="flex flex-col md:flex-row gap-8">
                     {/* Sidebar */}
                     <div className="w-full md:w-64 flex-shrink-0">
@@ -217,7 +304,7 @@ const Dashboard = () => {
                                     ))}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                     {(selectedCategory === 'all' ? allProducts : allProducts.filter(p => p.category === selectedCategory)).map(product => (
                                         <div key={product.id} className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
                                             <div className="h-48 overflow-hidden relative">
@@ -300,12 +387,12 @@ const Dashboard = () => {
 
                         {activeTab === 'orders' && (
                             <div className="space-y-6">
-                                {orders.length === 0 ? (
+                                {orders.filter(o => o.status !== 'deleted').length === 0 ? (
                                     <div className="text-center py-12 bg-white rounded-2xl border border-slate-100">
                                         <p className="text-slate-500">No orders placed yet.</p>
                                     </div>
                                 ) : (
-                                    orders.map(order => (
+                                    orders.filter(o => o.status !== 'deleted').map(order => (
                                         <div key={order._id} className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                                             <div className="flex flex-col md:flex-row justify-between md:items-center pb-4 border-b border-slate-50 mb-4 gap-4">
                                                 <div>
@@ -322,9 +409,16 @@ const Dashboard = () => {
                                                     </div>
                                                     <div>
                                                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
-                                                        <div className={`px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 mt-1 ${order.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                                            }`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${order.status === 'approved' ? 'bg-green-500' : 'bg-orange-500'}`}></span>
+                                                        <div className={`px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 mt-1 ${
+                                                            order.status === 'approved' ? 'bg-green-100 text-green-700'
+                                                            : order.status === 'rejected' ? 'bg-red-100 text-red-700'
+                                                            : 'bg-orange-100 text-orange-700'
+                                                        }`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                                order.status === 'approved' ? 'bg-green-500'
+                                                                : order.status === 'rejected' ? 'bg-red-500'
+                                                                : 'bg-orange-500'
+                                                            }`}></span>
                                                             {order.status}
                                                         </div>
                                                     </div>
@@ -340,7 +434,25 @@ const Dashboard = () => {
                                                 ))}
                                             </div>
 
-                                            <div className="flex justify-end pt-2">
+                                            <div className="flex items-center justify-between pt-2">
+                                                <div className="flex items-center gap-2">
+                                                    {order.status === 'pending' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => openEditOrder(order)}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors"
+                                                            >
+                                                                <Pencil size={12} /> Edit Order
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deleteOrder(order._id)}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+                                                            >
+                                                                <Trash2 size={12} /> Delete Order
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                                 <span className="text-lg font-bold text-slate-900">Total: ₹{order.totalAmount}</span>
                                             </div>
                                         </div>
@@ -351,6 +463,112 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+            {/* ── Edit Order Modal ── */}
+            {editingOrder && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => { setEditingOrder(null); setProductSearch(''); }}>
+                    <div className="modal-sheet bg-white rounded-2xl shadow-2xl w-full sm:max-w-lg sm:mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-heading font-bold text-lg">Edit Order</h3>
+                                <p className="text-slate-400 text-xs font-mono">#{editingOrder._id}</p>
+                            </div>
+                            <button onClick={() => setEditingOrder(null)} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                                <XCircle size={18} />
+                            </button>
+                        </div>
+
+                        {/* Current Order Items */}
+                        <div className="px-6 pt-4 pb-2">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Items</p>
+                            {editingOrder.products.length === 0 ? (
+                                <p className="text-sm text-slate-400 italic py-2">No items — add products below.</p>
+                            ) : (
+                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                    {editingOrder.products.map((p, idx) => (
+                                        <div key={idx} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-200 bg-white">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-slate-800 text-sm truncate">{p.name}</p>
+                                                <p className="text-xs text-slate-400">₹{p.price} / item</p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <button onClick={() => updateEditQty(idx, -1)} className="p-1 rounded-md hover:bg-slate-100 transition-colors">
+                                                    <Minus size={13} />
+                                                </button>
+                                                <span className="w-7 text-center font-bold text-sm">{p.quantity}</span>
+                                                <button onClick={() => updateEditQty(idx, 1)} className="p-1 rounded-md hover:bg-slate-100 transition-colors">
+                                                    <Plus size={13} />
+                                                </button>
+                                            </div>
+                                            <span className="text-sm font-semibold text-slate-900 min-w-[56px] text-right">
+                                                ₹{(p.price * p.quantity).toLocaleString()}
+                                            </span>
+                                            <button
+                                                onClick={() => removeEditProduct(idx)}
+                                                title="Remove item"
+                                                className="p-1 rounded-md text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors flex-shrink-0"
+                                            >
+                                                <XCircle size={15} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Add Products from Catalog */}
+                        <div className="px-6 pb-4 border-t border-dashed border-slate-200 pt-3 mt-1">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                <Plus size={12} /> Add Products
+                            </p>
+                            <input
+                                type="text"
+                                placeholder="Search products…"
+                                value={productSearch}
+                                onChange={e => setProductSearch(e.target.value)}
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                            />
+                            <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                                {allProducts
+                                    .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                                    .map(product => (
+                                        <div key={product.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-slate-800 text-sm truncate">{product.name}</p>
+                                                <p className="text-xs text-slate-400">₹{product.price}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => addProductToEditOrder(product)}
+                                                className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition-colors"
+                                            >
+                                                <Plus size={12} /> Add
+                                            </button>
+                                        </div>
+                                    ))
+                                }
+                                {allProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                                    <p className="text-sm text-slate-400 text-center py-2 italic">No products found.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
+                            <span className="text-lg font-heading font-bold text-slate-900">
+                                Total: ₹{editingOrder.products.reduce((s, p) => s + p.price * p.quantity, 0).toLocaleString()}
+                            </span>
+                            <div className="flex gap-3">
+                                <button onClick={() => { setEditingOrder(null); setProductSearch(''); }} className="px-4 py-2 text-sm font-semibold border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+                                    Cancel
+                                </button>
+                                <button onClick={saveEditOrder} className="px-5 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-2">
+                                    <Pencil size={14} /> Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 };
