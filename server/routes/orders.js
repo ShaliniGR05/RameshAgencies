@@ -66,6 +66,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         const { products, totalAmount } = req.body;
         order.products = products;
         order.totalAmount = totalAmount;
+        order.isEdited = true;
         await order.save();
 
         // Notify admin via WhatsApp (non-blocking)
@@ -130,8 +131,9 @@ router.delete('/:id', verifyToken, async (req, res) => {
 router.get('/', verifyToken, async (req, res) => {
     try {
         if (req.userRole === 'admin') {
-            // Admin sees all orders, populate user info
-            const orders = await Order.find().populate('userId', 'username').sort({ createdAt: -1 });
+            // Admin sees all orders.
+            // We want 'deleted' and edited ones to float to the top, so we sort by updatedAt descendingly.
+            const orders = await Order.find().populate('userId', 'username').sort({ updatedAt: -1 });
             res.json(orders);
         } else {
             // Customer sees their own orders

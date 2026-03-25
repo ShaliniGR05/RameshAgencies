@@ -21,6 +21,10 @@ const orderSchema = new mongoose.Schema({
         enum: ['pending', 'approved', 'cancelled', 'rejected', 'deleted'],
         default: 'pending',
     },
+    isEdited: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 export default mongoose.model('Order', orderSchema);

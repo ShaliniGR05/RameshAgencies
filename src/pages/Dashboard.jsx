@@ -18,6 +18,7 @@ const Dashboard = () => {
     const [toast, setToast] = useState(null);
     const [editingOrder, setEditingOrder] = useState(null); // order being edited
     const [productSearch, setProductSearch] = useState(''); // search inside edit modal
+    const [confirmDelete, setConfirmDelete] = useState(null); // orderId pending deletion
 
     const showToast = useCallback((message, type = 'success') => {
         setToast({ message, type });
@@ -88,7 +89,6 @@ const Dashboard = () => {
     };
 
     const deleteOrder = async (orderId) => {
-        if (!window.confirm('Are you sure you want to delete this order?')) return;
         try {
             const token = localStorage.getItem('token');
             await axios.delete(`${API_BASE_URL}/api/orders/${orderId}`, {
@@ -99,6 +99,8 @@ const Dashboard = () => {
         } catch (error) {
             const msg = error.response?.data?.message || 'Failed to delete order.';
             showToast(msg, 'error');
+        } finally {
+            setConfirmDelete(null);
         }
     };
 
@@ -445,7 +447,7 @@ const Dashboard = () => {
                                                                 <Pencil size={12} /> Edit Order
                                                             </button>
                                                             <button
-                                                                onClick={() => deleteOrder(order._id)}
+                                                                onClick={() => setConfirmDelete(order._id)}
                                                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
                                                             >
                                                                 <Trash2 size={12} /> Delete Order
@@ -565,6 +567,48 @@ const Dashboard = () => {
                                     <Pencil size={14} /> Save Changes
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Delete Confirmation Modal ── */}
+            {confirmDelete && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                    onClick={() => setConfirmDelete(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="bg-red-600 text-white px-6 py-4 flex items-center gap-3">
+                            <Trash2 size={20} />
+                            <h3 className="font-heading font-bold text-lg">Delete Order</h3>
+                        </div>
+
+                        {/* Body */}
+                        <div className="px-6 py-6">
+                            <p className="text-slate-700 text-sm leading-relaxed">
+                                Are you sure you want to delete this order? This action cannot be undone.
+                            </p>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setConfirmDelete(null)}
+                                className="px-5 py-2 text-sm font-semibold border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => deleteOrder(confirmDelete)}
+                                className="px-5 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                            >
+                                <Trash2 size={14} /> Yes, Delete
+                            </button>
                         </div>
                     </div>
                 </div>

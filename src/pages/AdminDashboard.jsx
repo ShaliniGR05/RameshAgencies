@@ -135,6 +135,16 @@ const AdminDashboard = () => {
         }
     };
 
+    const rejectUser = async (id) => {
+        if (!window.confirm('Are you sure you want to reject and delete this user?')) return;
+        try {
+            await axios.delete(`${API_BASE_URL}/api/auth/reject-user/${id}`, config);
+            fetchPendingUsers();
+        } catch (error) {
+            console.error('Error rejecting user', error);
+        }
+    };
+
     const updateOrderStatus = async (id, status) => {
         try {
             await axios.put(`${API_BASE_URL}/api/orders/${id}/status`, { status }, config);
@@ -232,12 +242,20 @@ const AdminDashboard = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {!user.isApproved && (
-                                                            <button
-                                                                onClick={() => approveUser(user._id)}
-                                                                className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
-                                                            >
-                                                                <Check size={12} /> Approve
-                                                            </button>
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => approveUser(user._id)}
+                                                                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <Check size={12} /> Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => rejectUser(user._id)}
+                                                                    className="px-3 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold rounded hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <XCircle size={12} /> Reject
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -274,26 +292,91 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-slate-200">
-                                            {allOrders.map(order => (
-                                                <tr key={order._id} className="hover:bg-slate-50/50">
+                                        {allOrders.map(order => {
+                                            // ── Deleted order: show only a minimal placeholder row ──
+                                            if (order.status === 'deleted') {
+                                                return (
+                                                    <tr key={order._id} className="bg-slate-50/60">
+                                                        <td className="px-6 py-3 whitespace-nowrap text-sm font-mono text-slate-400">#{order._id.slice(-6)}</td>
+                                                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-slate-400">
+                                                            {order.userId?.username || 'Unknown'}
+                                                            <span className="block text-xs text-slate-400 mt-0.5">
+                                                                Deleted: {new Date(order.updatedAt).toLocaleString('en-IN', {
+                                                                    day: 'numeric', month: 'short', year: 'numeric', 
+                                                                    hour: 'numeric', minute: '2-digit', hour12: true 
+                                                                })}
+                                                            </span>
+                                                        </td>
+                                                        {/* Items — show actual products */}
+                                                        <td className="px-6 py-3 text-sm text-slate-400">
+                                                            {order.products.length} items
+                                                            <span className="block text-xs text-slate-400 truncate max-w-[150px]">
+                                                                {order.products.map(p => p.name).join(', ')}
+                                                            </span>
+                                                        </td>
+                                                        {/* Amount */}
+                                                        <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-400">₹{order.totalAmount.toLocaleString()}</td>
+                                                        {/* Status */}
+                                                        <td className="px-6 py-3 whitespace-nowrap">
+                                                            <span className="px-2 py-1 text-xs font-bold rounded-full bg-slate-200 text-slate-500">
+                                                                🗑️ ORDER DELETED
+                                                            </span>
+                                                        </td>
+                                                        {/* View button */}
+                                                        <td className="px-6 py-3 whitespace-nowrap">
+                                                            <button
+                                                                onClick={() => setSelectedOrder(order)}
+                                                                className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded hover:bg-blue-100 transition-colors flex items-center gap-1 border border-blue-200"
+                                                            >
+                                                                <Eye size={12} /> View
+                                                            </button>
+                                                        </td>
+                                                        {/* Actions column */}
+                                                        <td className="px-6 py-3 whitespace-nowrap">
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-red-50 text-red-600 text-[11px] font-bold border border-red-200 shadow-sm leading-none tracking-wide uppercase">
+                                                                🗑️ Deleted by User
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
+
+                                            // ── Normal / edited orders ──
+                                            return (
+                                                <tr key={order._id} className={`hover:bg-slate-50/50 ${order.isEdited ? 'bg-amber-50/60' : ''}`}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">#{order._id.slice(-6)}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{order.userId?.username || 'Unknown'}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                                        {order.userId?.username || 'Unknown'}
+                                                        <span className="block text-xs text-slate-400 mt-0.5">
+                                                            {order.isEdited ? 'Updated: ' : 'Placed: '} 
+                                                            {new Date(order.isEdited ? order.updatedAt : order.createdAt).toLocaleString('en-IN', {
+                                                                day: 'numeric', month: 'short', year: 'numeric', 
+                                                                hour: 'numeric', minute: '2-digit', hour12: true 
+                                                            })}
+                                                        </span>
+                                                    </td>
                                                     <td className="px-6 py-4 text-sm text-slate-600">
                                                         {order.products.length} items
-                                                        <span className="block text-xs text-slate-400 truncate max-w-[200px]">
+                                                        <span className="block text-xs text-slate-400 truncate max-w-[150px]">
                                                             {order.products.map(p => p.name).join(', ')}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">₹{order.totalAmount.toLocaleString()}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                                                            order.status === 'approved' ? 'bg-green-100 text-green-700'
-                                                            : order.status === 'rejected' ? 'bg-red-100 text-red-700'
-                                                            : order.status === 'deleted'  ? 'bg-slate-200 text-slate-500'
-                                                            : 'bg-orange-100 text-orange-700'
+                                                        <div className="flex flex-wrap items-center gap-1.5">
+                                                            <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                                                                order.status === 'approved' ? 'bg-green-100 text-green-700'
+                                                                : order.status === 'rejected' ? 'bg-red-100 text-red-700'
+                                                                : 'bg-orange-100 text-orange-700'
                                                             }`}>
-                                                            {order.status.toUpperCase()}
-                                                        </span>
+                                                                {order.status.toUpperCase()}
+                                                            </span>
+                                                            {order.isEdited && (
+                                                                <span className="px-2 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                                                                    ✏️ EDITED
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <button
@@ -304,31 +387,28 @@ const AdminDashboard = () => {
                                                         </button>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        {order.status === 'deleted' ? (
-                                                            <span className="text-xs text-slate-400 italic">— no actions —</span>
-                                                        ) : (
-                                                            <div className="flex items-center gap-2">
-                                                                {order.status !== 'approved' && (
-                                                                    <button
-                                                                        onClick={() => updateOrderStatus(order._id, 'approved')}
-                                                                        className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 transition-colors flex items-center gap-1"
-                                                                    >
-                                                                        <Check size={12} /> Approve
-                                                                    </button>
-                                                                )}
-                                                                {order.status !== 'rejected' && (
-                                                                    <button
-                                                                        onClick={() => updateOrderStatus(order._id, 'rejected')}
-                                                                        className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition-colors flex items-center gap-1"
-                                                                    >
-                                                                        <XCircle size={12} /> Reject
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            {order.status !== 'approved' && (
+                                                                <button
+                                                                    onClick={() => updateOrderStatus(order._id, 'approved')}
+                                                                    className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <Check size={12} /> Approve
+                                                                </button>
+                                                            )}
+                                                            {order.status !== 'rejected' && (
+                                                                <button
+                                                                    onClick={() => updateOrderStatus(order._id, 'rejected')}
+                                                                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <XCircle size={12} /> Reject
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            );
+                                        })}
                                             {allOrders.length === 0 && (
                                                 <tr>
                                                     <td colSpan="7" className="px-6 py-8 text-center text-slate-500 italic">
@@ -639,12 +719,26 @@ const AdminDashboard = () => {
 
                         {/* Customer & Date Info */}
                         <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-sm">
-                            <span className="text-slate-500">Customer: <span className="font-semibold text-slate-800">{selectedOrder.userId?.username || 'Unknown'}</span></span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                selectedOrder.status === 'approved' ? 'bg-green-100 text-green-700'
-                                : selectedOrder.status === 'rejected' ? 'bg-red-100 text-red-700'
-                                : 'bg-orange-100 text-orange-700'
-                            }`}>{selectedOrder.status.toUpperCase()}</span>
+                            <div className="flex flex-col">
+                                <span className="text-slate-500">Customer: <span className="font-semibold text-slate-800">{selectedOrder.userId?.username || 'Unknown'}</span></span>
+                                <span className="text-xs text-slate-400 mt-0.5">
+                                    {selectedOrder.isEdited ? 'Updated: ' : 'Placed: '} 
+                                    {new Date(selectedOrder.isEdited ? selectedOrder.updatedAt : selectedOrder.createdAt).toLocaleString('en-IN', {
+                                        day: 'numeric', month: 'short', year: 'numeric', 
+                                        hour: 'numeric', minute: '2-digit', hour12: true 
+                                    })}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                    selectedOrder.status === 'approved' ? 'bg-green-100 text-green-700'
+                                    : selectedOrder.status === 'rejected' ? 'bg-red-100 text-red-700'
+                                    : 'bg-orange-100 text-orange-700'
+                                }`}>{selectedOrder.status.toUpperCase()}</span>
+                                {selectedOrder.isEdited && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">✏️ EDITED</span>
+                                )}
+                            </div>
                         </div>
 
                         {/* Products List */}

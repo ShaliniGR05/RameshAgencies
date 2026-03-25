@@ -85,4 +85,14 @@ router.put('/approve-user/:id', verifyToken, verifyAdmin, async (req, res) => {
     }
 });
 
+// Reject (Delete) User (Admin)
+router.delete('/reject-user/:id', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ message: 'User rejected and deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error rejecting user', error });
+    }
+});
+
 export default router;
