@@ -4,7 +4,7 @@ import axios from 'axios';
 import API_BASE_URL from '../api';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { ArrowRight, Phone, MapPin } from 'lucide-react';
+import { ArrowRight, Phone, MapPin, XCircle } from 'lucide-react';
 
 // Converts a Google Drive share URL to a browser-renderable thumbnail URL.
 const convertDriveUrl = (url) => {
@@ -24,6 +24,7 @@ const convertDriveUrl = (url) => {
 const Home = () => {
     const [activeCategory, setActiveCategory] = useState('all');
     const [dbProducts, setDbProducts] = useState([]);
+    const [selectedProduct, setSelectedProduct] = useState(null);
 
     useEffect(() => {
         axios.get(`${API_BASE_URL}/api/products`)
@@ -164,8 +165,8 @@ const Home = () => {
                     {/* Product Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                         {filteredProducts.map(product => (
-                            <div key={product.id} className="bg-white rounded-2xl overflow-hidden card-hover border border-slate-100 shadow-sm group">
-                                <div className="relative h-56 md:h-64 overflow-hidden">
+                            <div key={product.id} onClick={() => setSelectedProduct(product)} className="bg-white rounded-2xl overflow-hidden card-hover border border-slate-100 shadow-sm group cursor-pointer flex flex-col">
+                                <div className="relative h-56 md:h-64 overflow-hidden flex-shrink-0">
                                     <img
                                         src={product.image}
                                         alt={product.name}
@@ -174,20 +175,24 @@ const Home = () => {
                                     />
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                                     {/* Category Badge */}
-                                    <span className="absolute top-3 left-3 bg-orange-500 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-full">
+                                    <span className="absolute top-3 left-3 bg-orange-500 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-full shadow-sm">
                                         {categories.find(c => c.id === product.category)?.name}
                                     </span>
                                     {/* NEW badge for DB products */}
                                     {product.isNew && (
-                                        <span className="absolute top-3 right-3 bg-indigo-600 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-full">NEW</span>
+                                        <span className="absolute top-3 right-3 bg-indigo-600 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-full shadow-sm">NEW</span>
                                     )}
                                 </div>
-                                <div className="p-5 md:p-6">
-                                    <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2 font-heading text-slate-900 line-clamp-1">{product.name}</h3>
-                                    <p className="text-slate-500 text-xs md:text-sm mb-3 md:mb-4 line-clamp-2">{product.description}</p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xl md:text-2xl font-bold text-slate-900">₹{product.price.toLocaleString()}</span>
-                                        <Link to="/login" className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 hover:bg-slate-900 hover:text-white transition-colors">
+                                <div className="p-5 md:p-6 flex flex-col flex-1">
+                                    <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2 font-heading text-slate-900 leading-tight line-clamp-2">{product.name}</h3>
+                                    <p className="text-slate-500 text-xs md:text-sm mb-3 md:mb-4 line-clamp-2 flex-1">{product.description}</p>
+                                    <div className="flex items-center justify-between mt-auto pt-2">
+                                        <span className="text-xl md:text-2xl font-bold text-slate-900 pr-2">₹{product.price.toLocaleString()}</span>
+                                        <Link 
+                                            to="/login" 
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 hover:bg-slate-900 hover:text-white transition-colors shrink-0"
+                                        >
                                             <ArrowRight size={16} className="md:w-[18px] md:h-[18px]" />
                                         </Link>
                                     </div>
@@ -197,6 +202,64 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+
+            {/* ── Product Details Modal ── */}
+            {selectedProduct && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    onClick={() => setSelectedProduct(null)}
+                >
+                    <div 
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative flex flex-col md:flex-row my-auto"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Close button */}
+                        <button 
+                            onClick={() => setSelectedProduct(null)} 
+                            className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white backdrop-blur rounded-full text-slate-600 hover:text-slate-900 transition-colors shadow-sm"
+                        >
+                            <XCircle size={24} />
+                        </button>
+
+                        <div className="w-full md:w-1/2 h-64 md:h-auto bg-slate-50 relative">
+                            <img 
+                                src={selectedProduct.image} 
+                                alt={selectedProduct.name} 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => { e.target.style.display='none'; e.target.parentNode.style.background='linear-gradient(135deg,#f1f5f9,#e2e8f0)'; }} 
+                            />
+                        </div>
+
+                        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-white">
+                            <div className="mb-2">
+                                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full uppercase tracking-wider">
+                                    {categories.find(c => c.id === selectedProduct.category)?.name || selectedProduct.category}
+                                </span>
+                            </div>
+                            <h2 className="text-2xl font-heading font-bold text-slate-900 mb-2">{selectedProduct.name}</h2>
+                            <div className="text-2xl font-bold text-slate-900 mb-6 border-b border-slate-100 pb-4">
+                                ₹{selectedProduct.price}
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto pr-2 mb-6 max-h-48 md:max-h-64 scrollbar-thin scrollbar-thumb-slate-200">
+                                <h4 className="text-sm font-bold text-slate-900 mb-2">Description</h4>
+                                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
+                                    {selectedProduct.description || 'No description available for this product.'}
+                                </p>
+                            </div>
+                            
+                            <div className="pt-4 border-t border-slate-100 mt-auto">
+                                <Link
+                                    to="/login"
+                                    className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Login to Buy — ₹{selectedProduct.price}
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 };

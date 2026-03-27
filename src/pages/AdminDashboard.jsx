@@ -30,6 +30,11 @@ const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('users');
     const [selectedOrder, setSelectedOrder] = useState(null);
 
+    // Confirmation Modals State
+    const [productToDelete, setProductToDelete] = useState(null);
+    const [userToReject, setUserToReject] = useState(null);
+    const [orderToReject, setOrderToReject] = useState(null);
+
     // Products state
     const [allProducts, setAllProducts] = useState([]);
     const [filterCategory, setFilterCategory] = useState('all');
@@ -88,13 +93,19 @@ const AdminDashboard = () => {
         }
     };
 
-    const deleteProduct = async (id) => {
-        if (!window.confirm('Delete this product?')) return;
+    const deleteProduct = (id) => {
+        setProductToDelete(id);
+    };
+
+    const confirmDeleteProduct = async () => {
+        if (!productToDelete) return;
         try {
-            await axios.delete(`${API_BASE_URL}/api/products/${id}`, config);
+            await axios.delete(`${API_BASE_URL}/api/products/${productToDelete}`, config);
             fetchProducts();
         } catch (error) {
             console.error('Error deleting product', error);
+        } finally {
+            setProductToDelete(null);
         }
     };
 
@@ -135,13 +146,19 @@ const AdminDashboard = () => {
         }
     };
 
-    const rejectUser = async (id) => {
-        if (!window.confirm('Are you sure you want to reject and delete this user?')) return;
+    const rejectUser = (id) => {
+        setUserToReject(id);
+    };
+
+    const confirmRejectUser = async () => {
+        if (!userToReject) return;
         try {
-            await axios.delete(`${API_BASE_URL}/api/auth/reject-user/${id}`, config);
+            await axios.delete(`${API_BASE_URL}/api/auth/reject-user/${userToReject}`, config);
             fetchPendingUsers();
         } catch (error) {
             console.error('Error rejecting user', error);
+        } finally {
+            setUserToReject(null);
         }
     };
 
@@ -151,6 +168,15 @@ const AdminDashboard = () => {
             fetchAllOrders();
         } catch (error) {
             console.error('Error updating order status', error);
+        }
+    };
+
+    const confirmRejectOrder = async () => {
+        if (!orderToReject) return;
+        try {
+            await updateOrderStatus(orderToReject, 'rejected');
+        } finally {
+            setOrderToReject(null);
         }
     };
 
@@ -282,7 +308,6 @@ const AdminDashboard = () => {
                                     <table className="min-w-full divide-y divide-slate-200">
                                         <thead className="bg-slate-50">
                                             <tr>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Order ID</th>
                                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
                                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Items</th>
                                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
@@ -297,7 +322,6 @@ const AdminDashboard = () => {
                                             if (order.status === 'deleted') {
                                                 return (
                                                     <tr key={order._id} className="bg-slate-50/60">
-                                                        <td className="px-6 py-3 whitespace-nowrap text-sm font-mono text-slate-400">#{order._id.slice(-6)}</td>
                                                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-slate-400">
                                                             {order.userId?.username || 'Unknown'}
                                                             <span className="block text-xs text-slate-400 mt-0.5">
@@ -319,7 +343,7 @@ const AdminDashboard = () => {
                                                         {/* Status */}
                                                         <td className="px-6 py-3 whitespace-nowrap">
                                                             <span className="px-2 py-1 text-xs font-bold rounded-full bg-slate-200 text-slate-500">
-                                                                🗑️ ORDER DELETED
+                                                                ORDER DELETED
                                                             </span>
                                                         </td>
                                                         {/* View button */}
@@ -334,7 +358,7 @@ const AdminDashboard = () => {
                                                         {/* Actions column */}
                                                         <td className="px-6 py-3 whitespace-nowrap">
                                                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-red-50 text-red-600 text-[11px] font-bold border border-red-200 shadow-sm leading-none tracking-wide uppercase">
-                                                                🗑️ Deleted by User
+                                                                Deleted by User
                                                             </span>
                                                         </td>
                                                     </tr>
@@ -344,7 +368,6 @@ const AdminDashboard = () => {
                                             // ── Normal / edited orders ──
                                             return (
                                                 <tr key={order._id} className={`hover:bg-slate-50/50 ${order.isEdited ? 'bg-amber-50/60' : ''}`}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">#{order._id.slice(-6)}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                                                         {order.userId?.username || 'Unknown'}
                                                         <span className="block text-xs text-slate-400 mt-0.5">
@@ -373,7 +396,7 @@ const AdminDashboard = () => {
                                                             </span>
                                                             {order.isEdited && (
                                                                 <span className="px-2 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-                                                                    ✏️ EDITED
+                                                                    EDITED
                                                                 </span>
                                                             )}
                                                         </div>
@@ -398,7 +421,7 @@ const AdminDashboard = () => {
                                                             )}
                                                             {order.status !== 'rejected' && (
                                                                 <button
-                                                                    onClick={() => updateOrderStatus(order._id, 'rejected')}
+                                                                    onClick={() => setOrderToReject(order._id)}
                                                                     className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition-colors flex items-center gap-1"
                                                                 >
                                                                     <XCircle size={12} /> Reject
@@ -710,7 +733,6 @@ const AdminDashboard = () => {
                         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
                             <div>
                                 <h3 className="font-heading font-bold text-lg">Order Details</h3>
-                                <p className="text-slate-400 text-xs font-mono">#{selectedOrder._id}</p>
                             </div>
                             <button onClick={() => setSelectedOrder(null)} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
                                 <X size={18} />
@@ -736,7 +758,7 @@ const AdminDashboard = () => {
                                     : 'bg-orange-100 text-orange-700'
                                 }`}>{selectedOrder.status.toUpperCase()}</span>
                                 {selectedOrder.isEdited && (
-                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">✏️ EDITED</span>
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">EDITED</span>
                                 )}
                             </div>
                         </div>
@@ -771,6 +793,75 @@ const AdminDashboard = () => {
                             <span className="text-lg font-heading font-bold text-slate-900">
                                 Total: ₹{selectedOrder.totalAmount.toLocaleString()}
                             </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Product Deletion Modal ── */}
+            {productToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setProductToDelete(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="bg-red-600 text-white px-6 py-4 flex items-center gap-3">
+                            <Trash2 size={20} />
+                            <h3 className="font-heading font-bold text-lg">Delete Product</h3>
+                        </div>
+                        <div className="px-6 py-6">
+                            <p className="text-slate-700 text-sm leading-relaxed">
+                                Are you sure you want to delete this product? This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <button onClick={() => setProductToDelete(null)} className="px-5 py-2 text-sm font-semibold border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
+                            <button onClick={confirmDeleteProduct} className="px-5 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                                <Trash2 size={14} /> Yes, Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── User Rejection Modal ── */}
+            {userToReject && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setUserToReject(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="bg-red-600 text-white px-6 py-4 flex items-center gap-3">
+                            <XCircle size={20} />
+                            <h3 className="font-heading font-bold text-lg">Reject User</h3>
+                        </div>
+                        <div className="px-6 py-6">
+                            <p className="text-slate-700 text-sm leading-relaxed">
+                                Are you sure you want to reject and delete this user?
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <button onClick={() => setUserToReject(null)} className="px-5 py-2 text-sm font-semibold border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
+                            <button onClick={confirmRejectUser} className="px-5 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                                <XCircle size={14} /> Yes, Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Order Rejection Modal ── */}
+            {orderToReject && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setOrderToReject(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="bg-red-600 text-white px-6 py-4 flex items-center gap-3">
+                            <XCircle size={20} />
+                            <h3 className="font-heading font-bold text-lg">Reject Order</h3>
+                        </div>
+                        <div className="px-6 py-6">
+                            <p className="text-slate-700 text-sm leading-relaxed">
+                                Are you sure you want to reject this order?
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <button onClick={() => setOrderToReject(null)} className="px-5 py-2 text-sm font-semibold border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
+                            <button onClick={confirmRejectOrder} className="px-5 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                                <XCircle size={14} /> Yes, Reject
+                            </button>
                         </div>
                     </div>
                 </div>

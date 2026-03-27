@@ -19,6 +19,7 @@ const Dashboard = () => {
     const [editingOrder, setEditingOrder] = useState(null); // order being edited
     const [productSearch, setProductSearch] = useState(''); // search inside edit modal
     const [confirmDelete, setConfirmDelete] = useState(null); // orderId pending deletion
+    const [selectedProduct, setSelectedProduct] = useState(null); // full view product
 
     const showToast = useCallback((message, type = 'success') => {
         setToast({ message, type });
@@ -308,19 +309,19 @@ const Dashboard = () => {
 
                                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                     {(selectedCategory === 'all' ? allProducts : allProducts.filter(p => p.category === selectedCategory)).map(product => (
-                                        <div key={product.id} className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
-                                            <div className="h-48 overflow-hidden relative">
+                                        <div key={product.id} onClick={() => setSelectedProduct(product)} className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer flex flex-col">
+                                            <div className="h-48 overflow-hidden relative flex-shrink-0">
                                                 <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.target.style.display='none'; e.target.parentNode.style.background='linear-gradient(135deg,#f1f5f9,#e2e8f0)'; }} />
                                             </div>
-                                            <div className="p-5">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h3 className="font-heading font-semibold text-lg">{product.name}</h3>
-                                                    <span className="font-bold text-slate-900">₹{product.price}</span>
+                                            <div className="p-5 flex flex-col flex-1">
+                                                <div className="flex justify-between items-start mb-2 gap-2">
+                                                    <h3 className="font-heading font-semibold text-lg leading-tight line-clamp-2">{product.name}</h3>
+                                                    <span className="font-bold text-slate-900 whitespace-nowrap">₹{product.price}</span>
                                                 </div>
-                                                <p className="text-slate-500 text-sm mb-4 line-clamp-2">{product.description}</p>
+                                                <p className="text-slate-500 text-sm mb-4 line-clamp-2 flex-1">{product.description}</p>
                                                 <button
-                                                    onClick={() => addToCart(product)}
-                                                    className="w-full py-2.5 rounded-lg border border-slate-200 text-slate-700 font-medium hover:bg-slate-900 hover:text-white hover:border-transparent transition-all flex items-center justify-center gap-2"
+                                                    onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                                                    className="w-full py-2.5 mt-auto rounded-lg border border-slate-200 text-slate-700 font-medium hover:bg-slate-900 hover:text-white hover:border-transparent transition-all flex items-center justify-center gap-2"
                                                 >
                                                     <Plus size={16} /> Add to Cart
                                                 </button>
@@ -609,6 +610,67 @@ const Dashboard = () => {
                             >
                                 <Trash2 size={14} /> Yes, Delete
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Product Details Modal ── */}
+            {selectedProduct && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                    onClick={() => setSelectedProduct(null)}
+                >
+                    <div 
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative flex flex-col md:flex-row my-auto"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Close button - absolute for styling */}
+                        <button 
+                            onClick={() => setSelectedProduct(null)} 
+                            className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white backdrop-blur rounded-full text-slate-600 hover:text-slate-900 transition-colors shadow-sm"
+                        >
+                            <XCircle size={24} />
+                        </button>
+
+                        <div className="w-full md:w-1/2 h-64 md:h-auto bg-slate-50 relative">
+                            <img 
+                                src={selectedProduct.image} 
+                                alt={selectedProduct.name} 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => { e.target.style.display='none'; e.target.parentNode.style.background='linear-gradient(135deg,#f1f5f9,#e2e8f0)'; }} 
+                            />
+                        </div>
+
+                        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-white">
+                            <div className="mb-2">
+                                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full uppercase tracking-wider">
+                                    {categories.find(c => c.id === selectedProduct.category)?.name || selectedProduct.category}
+                                </span>
+                            </div>
+                            <h2 className="text-2xl font-heading font-bold text-slate-900 mb-2">{selectedProduct.name}</h2>
+                            <div className="text-2xl font-bold text-slate-900 mb-6 border-b border-slate-100 pb-4">
+                                ₹{selectedProduct.price}
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto pr-2 mb-6 max-h-48 md:max-h-64 scrollbar-thin scrollbar-thumb-slate-200">
+                                <h4 className="text-sm font-bold text-slate-900 mb-2">Description</h4>
+                                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
+                                    {selectedProduct.description || 'No description available for this product.'}
+                                </p>
+                            </div>
+                            
+                            <div className="pt-4 border-t border-slate-100 mt-auto">
+                                <button
+                                    onClick={() => {
+                                        addToCart(selectedProduct);
+                                        setSelectedProduct(null);
+                                    }}
+                                    className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <ShoppingBag size={18} /> Add to Cart — ₹{selectedProduct.price}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
